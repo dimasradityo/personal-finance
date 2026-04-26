@@ -20,6 +20,7 @@ import { ClassificationRules } from './ClassificationRules'
 import {
   getTransactions,
   batchUpdateTransactions,
+  deleteTransactions,
   getUnclassifiedCount,
   TransactionFilters,
 } from '@/lib/actions/transactions'
@@ -653,6 +654,22 @@ export function TransactionsFeed({
               Apply
             </button>
           )}
+          <button
+            onClick={() => {
+              if (!window.confirm(`Delete ${checkedIds.size} transaction(s)? This cannot be undone.`)) return
+              startTransition(async () => {
+                await deleteTransactions(Array.from(checkedIds))
+                setCheckedIds(new Set())
+                setBatchType('')
+                setBatchCategoryId('')
+                refresh()
+              })
+            }}
+            className="rounded-md px-3 py-1.5 text-xs font-medium"
+            style={{ background: 'var(--red-dim)', border: '1px solid var(--red-border)', color: 'var(--red)' }}
+          >
+            Delete
+          </button>
           <button
             onClick={() => { setCheckedIds(new Set()); setBatchType(''); setBatchCategoryId('') }}
             className="rounded-md px-3 py-1.5 text-xs font-medium ml-auto"

@@ -265,6 +265,47 @@ export async function toggleClassificationRule(
   return { error: null }
 }
 
+export async function deleteTransactions(ids: string[]): Promise<{ error: string | null }> {
+  const supabase = createClient()
+
+  // Fetch selected transactions to find mirror rows
+  const { data: txns, error: fetchError } = await supabase
+    .from('transactions')
+    .select('id, merchant, date, amount, account_id, destination_account_id')
+    .in('id', ids)
+
+  if (fetchError) return { error: fetchError.message }
+
+  const allIdsToDelete = new Set(ids)
+
+  // For each transaction with a destination account, find its mirror row
+  const transferTxns = (txns ?? []).filter((tx) => tx.destination_account_id)
+  if (transferTxns.length > 0) {
+    for (const tx of transferTxns) {
+      const { data: mirrors } = await supabase
+        .from('transactions')
+        .select('id')
+        .eq('merchant', tx.merchant)
+        .eq('date', tx.date)
+        .eq('amount', tx.amount)
+        .eq('account_id', tx.destination_account_id)
+        .eq('destination_account_id', tx.account_id)
+        .not('id', 'in', `(${ids.join(',')})`)
+
+      mirrors?.forEach((m) => allIdsToDelete.add(m.id))
+    }
+  }
+
+  const { error } = await supabase
+    .from('transactions')
+    .delete()
+    .in('id', Array.from(allIdsToDelete))
+
+  if (error) return { error: error.message }
+  revalidatePath('/transactions')
+  return { error: null }
+}
+
 export async function rerunClassificationRules(): Promise<{ updatedCount: number; error: string | null }> {
   const supabase = createClient()
 
