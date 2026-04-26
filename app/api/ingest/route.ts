@@ -93,7 +93,7 @@ export async function POST(req: NextRequest) {
       .select('*')
       .eq('is_enabled', true)
 
-    let matchedType: TransactionType | null = null
+    let matchedType: TransactionType = 'Expense'
     let matchedCategoryId: string | null = null
 
     if (rules) {
