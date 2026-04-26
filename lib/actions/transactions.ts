@@ -117,7 +117,7 @@ export async function createTransaction(data: CreateTransactionData): Promise<{ 
     })
   }
 
-  revalidatePath('/transactions')
+  revalidatePath('/', 'layout')
   return { id: tx.id, error: null }
 }
 
@@ -133,7 +133,7 @@ export async function updateTransactionTypeAndCategory(
     .eq('id', id)
 
   if (error) return { error: error.message }
-  revalidatePath('/transactions')
+  revalidatePath('/', 'layout')
   return { error: null }
 }
 
@@ -154,7 +154,7 @@ export async function batchUpdateTransactions(
     .in('id', ids)
 
   if (error) return { error: error.message }
-  revalidatePath('/transactions')
+  revalidatePath('/', 'layout')
   return { error: null }
 }
 
@@ -192,7 +192,7 @@ export async function resolveIngestionError(
     .eq('id', errorId)
 
   if (error) return { error: error.message }
-  revalidatePath('/transactions')
+  revalidatePath('/', 'layout')
   return { error: null }
 }
 
@@ -226,7 +226,7 @@ export async function createClassificationRule(data: ClassificationRuleData): Pr
     })
 
   if (error) return { error: error.message }
-  revalidatePath('/transactions')
+  revalidatePath('/', 'layout')
   return { error: null }
 }
 
@@ -246,7 +246,7 @@ export async function updateClassificationRule(
     .eq('id', id)
 
   if (error) return { error: error.message }
-  revalidatePath('/transactions')
+  revalidatePath('/', 'layout')
   return { error: null }
 }
 
@@ -261,7 +261,7 @@ export async function toggleClassificationRule(
     .eq('id', id)
 
   if (error) return { error: error.message }
-  revalidatePath('/transactions')
+  revalidatePath('/', 'layout')
   return { error: null }
 }
 
@@ -310,7 +310,7 @@ export async function deleteTransactions(ids: string[]): Promise<{ error: string
     .in('id', idsArray)
 
   if (error) return { error: error.message }
-  revalidatePath('/transactions')
+  revalidatePath('/', 'layout')
   return { error: null }
 }
 
@@ -359,6 +359,6 @@ export async function rerunClassificationRules(): Promise<{ updatedCount: number
     }
   }
 
-  revalidatePath('/transactions')
+  revalidatePath('/', 'layout')
   return { updatedCount, error: null }
 }
