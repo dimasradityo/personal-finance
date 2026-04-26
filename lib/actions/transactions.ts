@@ -31,7 +31,7 @@ export async function getTransactions(filters: TransactionFilters): Promise<Tran
 
   let query = supabase
     .from('transactions')
-    .select('*, account:accounts(*), category:categories(*)')
+    .select('*, account:accounts!account_id(*), category:categories(*), destination_account:accounts!destination_account_id(*)')
     .order('date', { ascending: false })
     .order('created_at', { ascending: false })
 

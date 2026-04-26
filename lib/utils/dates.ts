@@ -40,3 +40,21 @@ export function monthEnd(offset = 0, referenceDate: Date = new Date()): string {
 export function formatMonthYear(date: Date): string {
   return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
 }
+
+// Returns the P&L month (as 'YYYY-MM') that a CC Spend transaction belongs to.
+// If transaction date < statementDate → belongs to that calendar month.
+// If transaction date >= statementDate → belongs to next calendar month.
+export function getBillingCycleMonth(transactionDate: Date, statementDate: number): string {
+  const day = transactionDate.getDate()
+  const year = transactionDate.getFullYear()
+  const month = transactionDate.getMonth() // 0-indexed
+
+  if (day < statementDate) {
+    // Belongs to this calendar month
+    return `${year}-${String(month + 1).padStart(2, '0')}`
+  } else {
+    // Belongs to next calendar month
+    const next = new Date(year, month + 1, 1)
+    return `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}`
+  }
+}
