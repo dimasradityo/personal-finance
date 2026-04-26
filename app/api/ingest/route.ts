@@ -134,14 +134,19 @@ export async function POST(req: NextRequest) {
       .select('id')
       .single()
 
-    if (txError || !tx) {
-      await insertIngestionError(txError?.message ?? 'Failed to insert transaction', rawEmail)
-      return NextResponse.json({ error: 'Failed to insert transaction', detail: txError?.message, code: txError?.code }, { status: 422 })
+    if (txError) {
+      await insertIngestionError(txError.message, rawEmail)
+      return NextResponse.json({ error: 'Failed to insert transaction', detail: txError.message, code: txError.code, hint: txError.hint }, { status: 422 })
+    }
+
+    if (!tx) {
+      await insertIngestionError('Insert returned no row', rawEmail)
+      return NextResponse.json({ error: 'Insert returned no row' }, { status: 422 })
     }
 
     return NextResponse.json({ id: tx.id }, { status: 201 })
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error'
+    const message = err instanceof Error ? err.message : String(err)
     await insertIngestionError(message, rawEmail)
     return NextResponse.json({ error: message }, { status: 422 })
   }
