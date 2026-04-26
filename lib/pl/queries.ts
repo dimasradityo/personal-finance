@@ -60,6 +60,9 @@ export async function getPLData(year: number, month: number): Promise<PLData> {
   const accounts: Account[] = accountsResult.data ?? []
   const installments: (Installment & { account?: Account })[] = installmentsResult.data ?? []
 
+  console.log('getPLData txResult count:', allTx.length, 'error:', txResult.error)
+  console.log('getPLData expense rows:', allTx.filter(t => t.type === 'Expense').map(t => ({ id: t.id, amount: t.amount, date: t.date })))
+
   // ── Income ─────────────────────────────────────────────────────
   const incomeMap = new Map<string, number>()
   for (const tx of allTx) {
