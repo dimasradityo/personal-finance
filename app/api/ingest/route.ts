@@ -52,7 +52,18 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  const { account_name, merchant, amount, date } = body as IngestBody
+  const { account_name, merchant, amount } = body as IngestBody
+
+  // Normalize date: strip Chinese AM/PM suffix and time, extract YYYY-MM-DD
+  // Handles formats like "2026-4-26 下午06:53:05" or ISO strings
+  const rawDate = (body as IngestBody).date
+  const normalizedDate = rawDate
+    .replace(/[上下]午\d{2}:\d{2}:\d{2}/, '')  // strip Chinese time suffix
+    .trim()
+    .replace(/T.*$/, '')                          // strip ISO time if present
+    .trim()
+  const [y, m, d] = normalizedDate.split('-')
+  const date = `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`
 
   try {
     // 2. Look up account by name
