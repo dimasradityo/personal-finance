@@ -2,10 +2,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { ClassificationRule, TransactionType } from '@/types'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+function getSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+}
 
 interface IngestBody {
   account_name: string
@@ -16,6 +18,7 @@ interface IngestBody {
 }
 
 async function insertIngestionError(reason: string, rawEmail: string | null) {
+  const supabase = getSupabase()
   await supabase.from('ingestion_errors').insert({
     raw_email: rawEmail ?? '',
     error_reason: reason,
@@ -24,6 +27,7 @@ async function insertIngestionError(reason: string, rawEmail: string | null) {
 }
 
 export async function POST(req: NextRequest) {
+  const supabase = getSupabase()
   let body: Partial<IngestBody> = {}
   let rawEmail: string | null = null
 
