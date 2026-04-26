@@ -23,6 +23,7 @@ import {
   getUnclassifiedCount,
   TransactionFilters,
 } from '@/lib/actions/transactions'
+import { ConvertInstallmentModal } from './ConvertInstallmentModal'
 
 interface TransactionsFeedProps {
   initialTransactions: TransactionWithRelations[]
@@ -80,6 +81,8 @@ export function TransactionsFeed({
   const [batchCategoryId, setBatchCategoryId] = useState<string>('')
   const [popover, setPopover] = useState<PopoverState | null>(null)
   const [manualSlideOverOpen, setManualSlideOverOpen] = useState(false)
+  const [convertTx, setConvertTx] = useState<TransactionWithRelations | null>(null)
+  const [menuOpenId, setMenuOpenId] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
 
   const [accountDropOpen, setAccountDropOpen] = useState(false)
@@ -379,7 +382,7 @@ export function TransactionsFeed({
                       className="rounded"
                     />
                   </th>
-                  {['DATE', 'MERCHANT', 'ACCOUNT', 'TYPE', 'CATEGORY', 'AMOUNT'].map((h) => (
+                  {['DATE', 'MERCHANT', 'ACCOUNT', 'TYPE', 'CATEGORY', 'AMOUNT', ''].map((h) => (
                     <th
                       key={h}
                       className="px-3 py-3 text-left text-[11px] uppercase tracking-wide font-medium"
@@ -551,6 +554,45 @@ export function TransactionsFeed({
                           {isIncome ? '+' : '−'}{formatIDR(tx.amount)}
                         </span>
                       </td>
+
+                      {/* ⋯ menu */}
+                      <td className="px-2 py-3 w-8">
+                        {tx.type === 'CC Spend' && (
+                          <div className="relative">
+                            <button
+                              onClick={e => { e.stopPropagation(); setMenuOpenId(menuOpenId === tx.id ? null : tx.id) }}
+                              className="rounded px-1.5 py-1 text-xs transition-colors"
+                              style={{ color: 'var(--text-muted)', background: 'transparent', border: 'none', cursor: 'pointer' }}
+                            >
+                              ⋯
+                            </button>
+                            {menuOpenId === tx.id && (
+                              <div
+                                className="absolute right-0 mt-1 z-50 rounded-md shadow-lg overflow-hidden"
+                                style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', minWidth: 180, top: '100%' }}
+                              >
+                                <button
+                                  onClick={() => {
+                                    if (!tx.installment_converted) {
+                                      setConvertTx(tx)
+                                    }
+                                    setMenuOpenId(null)
+                                  }}
+                                  disabled={tx.installment_converted}
+                                  className="flex items-center gap-2 w-full px-3 py-2.5 text-xs text-left transition-colors"
+                                  style={{
+                                    color: tx.installment_converted ? 'var(--text-muted)' : 'var(--text-primary)',
+                                    background: 'transparent', border: 'none', cursor: tx.installment_converted ? 'not-allowed' : 'pointer',
+                                  }}
+                                  title={tx.installment_converted ? 'Already converted' : undefined}
+                                >
+                                  {tx.installment_converted ? '✓ Already converted' : 'Convert to Installment'}
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </td>
                     </tr>
                   )
                 })}
@@ -641,6 +683,14 @@ export function TransactionsFeed({
           onClose={() => setManualSlideOverOpen(false)}
         />
       </SlideOver>
+
+      {/* Convert to Installment Modal */}
+      <ConvertInstallmentModal
+        open={convertTx !== null}
+        tx={convertTx}
+        onClose={() => setConvertTx(null)}
+        onSuccess={() => { setConvertTx(null); refresh() }}
+      />
 
       {/* FAB */}
       <button
