@@ -27,6 +27,11 @@ async function insertIngestionError(reason: string, rawEmail: string | null) {
 }
 
 export async function POST(req: NextRequest) {
+  const secret = req.headers.get('x-api-secret')
+  if (secret !== process.env.API_INGEST_SECRET) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
   const supabase = getSupabase()
   let body: Partial<IngestBody> = {}
   let rawEmail: string | null = null
