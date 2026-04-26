@@ -139,8 +139,9 @@ export async function POST(req: NextRequest) {
       .single()
 
     if (txError) {
+      console.error('txError full:', JSON.stringify(txError))
       await insertIngestionError(txError.message, rawEmail)
-      return NextResponse.json({ error: 'Failed to insert transaction', detail: txError.message, code: txError.code, hint: txError.hint }, { status: 422 })
+      return NextResponse.json({ error: 'Failed to insert transaction', detail: txError.message, code: txError.code, hint: txError.hint, details: (txError as any).details }, { status: 422 })
     }
 
     if (!tx) {
