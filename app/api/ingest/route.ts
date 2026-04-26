@@ -18,12 +18,16 @@ interface IngestBody {
 }
 
 async function insertIngestionError(reason: string, rawEmail: string | null) {
-  const supabase = getSupabase()
-  await supabase.from('ingestion_errors').insert({
-    raw_email: rawEmail ?? '',
-    error_reason: reason,
-    is_resolved: false,
-  })
+  try {
+    const supabase = getSupabase()
+    await supabase.from('ingestion_errors').insert({
+      raw_email: rawEmail ?? '',
+      error_reason: reason,
+      is_resolved: false,
+    })
+  } catch {
+    // best-effort, never throw
+  }
 }
 
 export async function POST(req: NextRequest) {
