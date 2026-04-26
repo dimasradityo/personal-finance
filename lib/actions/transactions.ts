@@ -296,10 +296,15 @@ export async function deleteTransactions(ids: string[]): Promise<{ error: string
     }
   }
 
-  const { error } = await supabase
+  const idsArray = Array.from(allIdsToDelete)
+  console.log('deleteTransactions: deleting ids', idsArray)
+
+  const { error, count } = await supabase
     .from('transactions')
-    .delete()
-    .in('id', Array.from(allIdsToDelete))
+    .delete({ count: 'exact' })
+    .in('id', idsArray)
+
+  console.log('deleteTransactions: result', { error, count })
 
   if (error) return { error: error.message }
   revalidatePath('/transactions')
