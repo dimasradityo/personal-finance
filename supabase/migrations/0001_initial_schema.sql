@@ -2,7 +2,7 @@
 CREATE TABLE accounts (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL UNIQUE,
-  type TEXT NOT NULL CHECK (type IN ('Debit', 'Credit Card', 'E-Wallet', 'Crypto Wallet')),
+  type TEXT NOT NULL CHECK (type IN ('Debit', 'Credit Card', 'E-Wallet', 'Crypto Wallet', 'Loan')),
   balance INTEGER NOT NULL DEFAULT 0,
   credit_limit INTEGER,
   statement_date INTEGER CHECK (statement_date BETWEEN 1 AND 31),

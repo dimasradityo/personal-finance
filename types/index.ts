@@ -1,6 +1,6 @@
 // ─── Enums / Literals ─────────────────────────────────────────────────────────
 
-export type AccountType = 'Debit' | 'Credit Card' | 'E-Wallet' | 'Crypto Wallet'
+export type AccountType = 'Debit' | 'Credit Card' | 'E-Wallet' | 'Crypto Wallet' | 'Loan'
 
 export type TransactionType =
   | 'Income'
