@@ -95,3 +95,11 @@ $$ LANGUAGE plpgsql;
 CREATE TRIGGER accounts_updated_at
   BEFORE UPDATE ON accounts
   FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+-- ─── increment_balance RPC ────────────────────────────────────────────────────
+CREATE OR REPLACE FUNCTION increment_balance(p_account_id UUID, p_delta INTEGER)
+RETURNS VOID AS $$
+BEGIN
+  UPDATE accounts SET balance = balance + p_delta WHERE id = p_account_id;
+END;
+$$ LANGUAGE plpgsql;
