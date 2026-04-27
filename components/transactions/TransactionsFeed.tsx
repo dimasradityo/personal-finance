@@ -77,6 +77,7 @@ export function TransactionsFeed({
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([])
   const [transactions, setTransactions] = useState<TransactionWithRelations[]>(initialTransactions)
   const [unclassifiedCount, setUnclassifiedCount] = useState(initialUnclassifiedCount)
+  const [showUnclassifiedOnly, setShowUnclassifiedOnly] = useState(false)
   const [checkedIds, setCheckedIds] = useState<Set<string>>(new Set())
   const [batchType, setBatchType] = useState<TransactionType | ''>('')
   const [batchCategoryId, setBatchCategoryId] = useState<string>('')
@@ -189,6 +190,22 @@ export function TransactionsFeed({
       setBatchCategoryId('')
       refresh()
     })
+  }
+
+  const visibleTransactions = showUnclassifiedOnly
+    ? transactions.filter(tx => tx.type != null && TYPES_REQUIRING_CATEGORY.includes(tx.type) && !tx.category_id)
+    : transactions
+
+  function handleCategorized(txId: string) {
+    if (showUnclassifiedOnly) {
+      setTransactions(prev => prev.filter(tx => tx.id !== txId))
+    }
+    setUnclassifiedCount(prev => {
+      const next = Math.max(0, prev - 1)
+      if (next === 0) setShowUnclassifiedOnly(false)
+      return next
+    })
+    refresh()
   }
 
   return (
@@ -327,12 +344,18 @@ export function TransactionsFeed({
 
         {/* Unclassified chip */}
         {unclassifiedCount > 0 && (
-          <span
-            className="rounded-full px-2.5 py-0.5 text-xs font-semibold"
-            style={{ background: 'var(--red-dim)', border: '1px solid var(--red-border)', color: 'var(--red)' }}
+          <button
+            onClick={() => setShowUnclassifiedOnly(v => !v)}
+            className="rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors"
+            style={{
+              background: showUnclassifiedOnly ? 'var(--red)' : 'var(--red-dim)',
+              border: '1px solid var(--red-border)',
+              color: showUnclassifiedOnly ? '#fff' : 'var(--red)',
+              cursor: 'pointer',
+            }}
           >
             • {unclassifiedCount} unclassified
-          </span>
+          </button>
         )}
 
         {isPending && (
@@ -395,14 +418,14 @@ export function TransactionsFeed({
                 </tr>
               </thead>
               <tbody>
-                {transactions.length === 0 && (
+                {visibleTransactions.length === 0 && (
                   <tr>
                     <td colSpan={7} className="px-4 py-12 text-center text-sm" style={{ color: 'var(--text-muted)' }}>
-                      No transactions found.
+                      {showUnclassifiedOnly ? 'No unclassified transactions.' : 'No transactions found.'}
                     </td>
                   </tr>
                 )}
-                {transactions.map((tx) => {
+                {visibleTransactions.map((tx) => {
                   const cat = tx.category
                   const isIncome = tx.type === 'Income'
                   const needsCat = tx.type != null && TYPES_REQUIRING_CATEGORY.includes(tx.type)
@@ -487,7 +510,7 @@ export function TransactionsFeed({
                               categories={categories}
                               mode="type"
                               onClose={() => setPopover(null)}
-                              onUpdated={refresh}
+                              onUpdated={() => { setPopover(null); handleCategorized(tx.id) }}
                             />
                           )}
                         </div>
@@ -540,7 +563,7 @@ export function TransactionsFeed({
                               categories={categories}
                               mode="category"
                               onClose={() => setPopover(null)}
-                              onUpdated={refresh}
+                              onUpdated={() => { setPopover(null); handleCategorized(tx.id) }}
                             />
                           )}
                         </div>
