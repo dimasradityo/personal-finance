@@ -2,7 +2,8 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
-import { TransactionType, TransactionWithRelations, Category, ClassificationRule, IngestionError } from '@/types'
+import { TransactionType, TransactionWithRelations, Category, ClassificationRule, IngestionError, AccountType } from '@/types'
+import { getBalanceDelta } from '@/lib/utils/balance'
 
 export interface TransactionFilters {
   year?: number
@@ -74,8 +75,35 @@ export async function getUnclassifiedCount(): Promise<number> {
   return count ?? 0
 }
 
+async function applyBalanceDeltas(
+  supabase: ReturnType<typeof createClient>,
+  deltas: { accountId: string; delta: number }[]
+): Promise<string | null> {
+  for (const { accountId, delta } of deltas) {
+    if (delta === 0) continue
+    const { error } = await supabase.rpc('increment_balance', {
+      p_account_id: accountId,
+      p_delta: delta,
+    })
+    if (error) return error.message
+  }
+  return null
+}
+
 export async function createTransaction(data: CreateTransactionData): Promise<{ id: string | null; error: string | null }> {
   const supabase = createClient()
+
+  // Fetch account types needed for delta exclusion logic
+  const accountIds = [data.account_id, data.destination_account_id].filter(Boolean) as string[]
+  const { data: accountRows, error: accError } = await supabase
+    .from('accounts')
+    .select('id, type')
+    .in('id', accountIds)
+  if (accError) return { id: null, error: accError.message }
+
+  const accountTypeMap = Object.fromEntries((accountRows ?? []).map(a => [a.id, a.type as AccountType]))
+  const srcType = accountTypeMap[data.account_id]
+  const dstType = data.destination_account_id ? accountTypeMap[data.destination_account_id] : null
 
   const { data: tx, error } = await supabase
     .from('transactions')
@@ -116,6 +144,18 @@ export async function createTransaction(data: CreateTransactionData): Promise<{ 
       installment_converted: false,
     })
   }
+
+  // Apply balance deltas (once, from original transaction only — not mirror)
+  const deltas = getBalanceDelta({
+    account_id: data.account_id,
+    account_type: srcType,
+    destination_account_id: data.destination_account_id ?? null,
+    destination_account_type: dstType,
+    amount: data.amount,
+    type: data.type,
+  })
+  const deltaError = await applyBalanceDeltas(supabase, deltas)
+  if (deltaError) return { id: null, error: deltaError }
 
   revalidatePath('/', 'layout')
   return { id: tx.id, error: null }
