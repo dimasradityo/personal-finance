@@ -94,12 +94,23 @@ export function AccountsPageClient({ accounts, usdtRate }: AccountsPageClientPro
         </button>
       </div>
 
-      {/* Account card grid */}
-      <div
-        className="grid gap-[14px]"
-        style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}
-      >
-        {accounts.map((acc) => {
+      {/* Account sections grouped by type */}
+      {(['Debit', 'E-Wallet', 'Credit Card', 'Loan', 'Crypto Wallet'] as const)
+        .map(type => {
+          const group = accounts
+            .filter(a => a.type === type)
+            .sort((a, b) => a.name.localeCompare(b.name))
+          if (group.length === 0) return null
+          return (
+            <div key={type} className="mb-6">
+              <h2 className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: 'var(--text-muted)' }}>
+                {type}
+              </h2>
+              <div
+                className="grid gap-[14px]"
+                style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}
+              >
+                {group.map((acc) => {
           const typeColors = TYPE_LABELS[acc.type]
           const stripeColor = TYPE_COLORS[acc.type]
           const isCC = acc.type === 'Credit Card'
@@ -276,16 +287,19 @@ export function AccountsPageClient({ accounts, usdtRate }: AccountsPageClientPro
             </div>
           )
         })}
+              </div>
+            </div>
+          )
+        })}
 
-        {accounts.length === 0 && (
-          <div
-            className="col-span-full rounded-lg p-12 text-center"
-            style={{ border: '1px dashed var(--border-default)' }}
-          >
-            <p style={{ color: 'var(--text-muted)' }}>No accounts yet. Add your first account.</p>
-          </div>
-        )}
-      </div>
+      {accounts.length === 0 && (
+        <div
+          className="rounded-lg p-12 text-center"
+          style={{ border: '1px dashed var(--border-default)' }}
+        >
+          <p style={{ color: 'var(--text-muted)' }}>No accounts yet. Add your first account.</p>
+        </div>
+      )}
 
       {/* Add / Edit Slide-over */}
       <SlideOver
