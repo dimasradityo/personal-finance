@@ -19,6 +19,7 @@ const TYPE_COLORS: Record<string, string> = {
   'E-Wallet': 'var(--green)',
   'Crypto Wallet': 'var(--purple)',
   'Loan': 'var(--red)',
+  'Investment': 'var(--teal)',
 }
 
 const TYPE_LABELS: Record<string, { bg: string; border: string; color: string }> = {
@@ -27,6 +28,7 @@ const TYPE_LABELS: Record<string, { bg: string; border: string; color: string }>
   'E-Wallet': { bg: 'var(--green-dim)', border: 'var(--green-border)', color: 'var(--green)' },
   'Crypto Wallet': { bg: 'var(--purple-dim)', border: 'var(--purple-border)', color: 'var(--purple)' },
   'Loan': { bg: 'var(--red-dim)', border: 'var(--red-border)', color: 'var(--red)' },
+  'Investment': { bg: 'var(--teal-dim)', border: 'var(--teal-border)', color: 'var(--teal)' },
 }
 
 export function AccountsPageClient({ accounts, usdtRate }: AccountsPageClientProps) {
@@ -37,9 +39,7 @@ export function AccountsPageClient({ accounts, usdtRate }: AccountsPageClientPro
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null)
 
   const netWorth = accounts.reduce((sum, acc) => {
-    if (acc.type === 'Credit Card') {
-      return sum - acc.balance
-    }
+    if (acc.type === 'Credit Card' || acc.type === 'Loan') return sum - acc.balance
     return sum + acc.balance
   }, 0)
 
@@ -95,7 +95,7 @@ export function AccountsPageClient({ accounts, usdtRate }: AccountsPageClientPro
       </div>
 
       {/* Account sections grouped by type */}
-      {(['Debit', 'E-Wallet', 'Credit Card', 'Loan', 'Crypto Wallet'] as const)
+      {(['Debit', 'E-Wallet', 'Investment', 'Credit Card', 'Loan', 'Crypto Wallet'] as const)
         .map(type => {
           const group = accounts
             .filter(a => a.type === type)
