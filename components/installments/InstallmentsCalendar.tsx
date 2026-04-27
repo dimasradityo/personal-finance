@@ -256,16 +256,16 @@ function DetailSlideOver({
 
 // ── Add Installment Modal ─────────────────────────────────────────────────────
 function AddInstallmentModal({
-  open, onClose, onSuccess, ccAccounts,
+  open, onClose, onSuccess, eligibleAccounts,
 }: {
   open: boolean
   onClose: () => void
   onSuccess: () => void
-  ccAccounts: Account[]
+  eligibleAccounts: Account[]
 }) {
   const now = new Date()
   const [name, setName] = useState('')
-  const [accountId, setAccountId] = useState(ccAccounts[0]?.id ?? '')
+  const [accountId, setAccountId] = useState(eligibleAccounts[0]?.id ?? '')
   const [totalAmount, setTotalAmount] = useState('')
   const [tenure, setTenure] = useState('')
   const [startMonth, setStartMonth] = useState({ year: now.getFullYear(), month: now.getMonth() + 1 })
@@ -326,9 +326,9 @@ function AddInstallmentModal({
             <input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. iPhone 15 installment" style={inputStyle} />
           </Field>
 
-          <Field label="Linked CC Account">
+          <Field label="Linked Account">
             <select value={accountId} onChange={e => setAccountId(e.target.value)} style={inputStyle}>
-              {ccAccounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+              {eligibleAccounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
             </select>
           </Field>
 
@@ -455,9 +455,10 @@ interface InstallmentsCalendarProps {
   initialActive: InstallmentWithComputed[]
   initialCompleted: InstallmentWithComputed[]
   ccAccounts: Account[]
+  loanAccounts: Account[]
 }
 
-export function InstallmentsCalendar({ initialActive, initialCompleted, ccAccounts }: InstallmentsCalendarProps) {
+export function InstallmentsCalendar({ initialActive, initialCompleted, ccAccounts, loanAccounts }: InstallmentsCalendarProps) {
   const [tab, setTab] = useState<'active' | 'archive'>('active')
   const [active, setActive] = useState(initialActive)
   const [completed, setCompleted] = useState(initialCompleted)
@@ -465,6 +466,8 @@ export function InstallmentsCalendar({ initialActive, initialCompleted, ccAccoun
   const [detailOpen, setDetailOpen] = useState(false)
   const [addOpen, setAddOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
+
+  const eligibleAccounts = [...ccAccounts, ...loanAccounts]
 
   // Build 12 months starting from current
   const cur = currentMonthStr()
@@ -527,6 +530,8 @@ export function InstallmentsCalendar({ initialActive, initialCompleted, ccAccoun
                 {months.map(monthStr => {
                   const isCurrentMonth = monthStr === cur
                   const activeInMonth = active.filter(i => isActiveInMonth(i, monthStr))
+                  const activeCC = activeInMonth.filter(i => i.account_type === 'Credit Card')
+                  const activeLoan = activeInMonth.filter(i => i.account_type === 'Loan')
                   const totalForMonth = activeInMonth.reduce((s, i) => s + i.monthly_amount, 0)
 
                   return (
@@ -549,15 +554,38 @@ export function InstallmentsCalendar({ initialActive, initialCompleted, ccAccoun
                       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', marginBottom: activeInMonth.length > 0 ? 10 : 0 }}>
                         {activeInMonth.length === 0 ? (
                           <div style={{ fontSize: 11, color: 'var(--text-muted)', fontStyle: 'italic' }}>No installments</div>
-                        ) : activeInMonth.map(inst => (
-                          <InstallmentCard
-                            key={inst.id}
-                            inst={inst}
-                            color={accountColor(inst.account_name, allAccountNames)}
-                            isFinal={isFinalPayment(inst, monthStr)}
-                            onClick={() => openDetail(inst)}
-                          />
-                        ))}
+                        ) : (
+                          <>
+                            {activeCC.map(inst => (
+                              <InstallmentCard
+                                key={inst.id}
+                                inst={inst}
+                                color={accountColor(inst.account_name, allAccountNames)}
+                                isFinal={isFinalPayment(inst, monthStr)}
+                                onClick={() => openDetail(inst)}
+                              />
+                            ))}
+                            {activeLoan.length > 0 && (
+                              <>
+                                <div style={{
+                                  fontSize: 9, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase',
+                                  color: 'var(--text-muted)', marginTop: activeCC.length > 0 ? 8 : 0, marginBottom: 6,
+                                }}>
+                                  Loan Installments
+                                </div>
+                                {activeLoan.map(inst => (
+                                  <InstallmentCard
+                                    key={inst.id}
+                                    inst={inst}
+                                    color={accountColor(inst.account_name, allAccountNames)}
+                                    isFinal={isFinalPayment(inst, monthStr)}
+                                    onClick={() => openDetail(inst)}
+                                  />
+                                ))}
+                              </>
+                            )}
+                          </>
+                        )}
                       </div>
 
                       {/* Month total */}
@@ -597,7 +625,7 @@ export function InstallmentsCalendar({ initialActive, initialCompleted, ccAccoun
         open={addOpen}
         onClose={() => setAddOpen(false)}
         onSuccess={refresh}
-        ccAccounts={ccAccounts}
+        eligibleAccounts={eligibleAccounts}
       />
     </div>
   )

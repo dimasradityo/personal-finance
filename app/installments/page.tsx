@@ -12,6 +12,7 @@ export default async function InstallmentsPage() {
   ])
 
   const ccAccounts = accounts.filter(a => a.type === 'Credit Card')
+  const loanAccounts = accounts.filter(a => a.type === 'Loan')
 
   return (
     <div className="p-6 flex flex-col" style={{ height: 'calc(100vh - 64px)' }}>
@@ -19,6 +20,7 @@ export default async function InstallmentsPage() {
         initialActive={active}
         initialCompleted={completed}
         ccAccounts={ccAccounts}
+        loanAccounts={loanAccounts}
       />
     </div>
   )
