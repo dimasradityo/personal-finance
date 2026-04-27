@@ -308,10 +308,10 @@ export async function toggleClassificationRule(
 export async function deleteTransactions(ids: string[]): Promise<{ error: string | null }> {
   const supabase = createClient()
 
-  // Fetch selected transactions to find mirror rows
+  // Fetch selected transactions (need type + account info for balance reversal)
   const { data: txns, error: fetchError } = await supabase
     .from('transactions')
-    .select('id, merchant, date, amount, account_id, destination_account_id')
+    .select('id, merchant, date, amount, type, account_id, destination_account_id')
     .in('id', ids)
 
   if (fetchError) return { error: fetchError.message }
@@ -336,6 +336,16 @@ export async function deleteTransactions(ids: string[]): Promise<{ error: string
     }
   }
 
+  // Fetch account types for all accounts involved in original transactions
+  const involvedAccountIds = Array.from(new Set(
+    (txns ?? []).flatMap(tx => [tx.account_id, tx.destination_account_id].filter(Boolean) as string[])
+  ))
+  const { data: accountRows } = await supabase
+    .from('accounts')
+    .select('id, type')
+    .in('id', involvedAccountIds)
+  const accountTypeMap = Object.fromEntries((accountRows ?? []).map(a => [a.id, a.type as AccountType]))
+
   const idsArray = Array.from(allIdsToDelete)
 
   // Null out any ingestion_errors that reference these transactions before deleting
@@ -350,6 +360,23 @@ export async function deleteTransactions(ids: string[]): Promise<{ error: string
     .in('id', idsArray)
 
   if (error) return { error: error.message }
+
+  // Reverse balance deltas for originally-selected transactions only (not mirror rows)
+  for (const tx of txns ?? []) {
+    const deltas = getBalanceDelta({
+      account_id: tx.account_id,
+      account_type: accountTypeMap[tx.account_id],
+      destination_account_id: tx.destination_account_id ?? null,
+      destination_account_type: tx.destination_account_id ? accountTypeMap[tx.destination_account_id] : null,
+      amount: tx.amount,
+      type: tx.type as TransactionType,
+    })
+    // Reverse: negate all deltas
+    const reversedDeltas = deltas.map(d => ({ ...d, delta: -d.delta }))
+    const deltaError = await applyBalanceDeltas(supabase, reversedDeltas)
+    if (deltaError) return { error: deltaError }
+  }
+
   revalidatePath('/', 'layout')
   return { error: null }
 }
