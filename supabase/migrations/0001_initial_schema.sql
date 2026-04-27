@@ -36,8 +36,7 @@ CREATE TABLE transactions (
   source TEXT NOT NULL CHECK (source IN ('auto', 'manual')) DEFAULT 'auto',
   raw_email TEXT,
   notes TEXT,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  UNIQUE (account_id, amount, date, merchant)
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 -- ─── Installments ─────────────────────────────────────────────────────────────
