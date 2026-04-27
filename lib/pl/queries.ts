@@ -166,6 +166,8 @@ export async function getPLData(year: number, month: number): Promise<PLData> {
     if (!acc) continue
     // Don't double-count CC accounts (they're handled above via CC Spend)
     if (acc.type === 'Credit Card') continue
+    // Don't double-count Loan accounts — their obligations are captured via loanInstallments
+    if (acc.type === 'Loan') continue
 
     repayments.push({
       account_id: acc.id,
@@ -237,11 +239,18 @@ export async function getPLProjection(months = 3): Promise<{ projections: PLData
   const actualMonthsUsed = actuals.length
 
   const supabase = createClient()
-  const installmentsResult = await supabase
-    .from('installments')
-    .select('*, account:accounts(*)')
-    .eq('is_completed', false)
+  const [installmentsResult, accountsResult] = await Promise.all([
+    supabase
+      .from('installments')
+      .select('*, account:accounts(*)')
+      .eq('is_completed', false),
+    supabase
+      .from('accounts')
+      .select('*')
+      .eq('is_active', true),
+  ])
   const installments: (Installment & { account?: Account })[] = installmentsResult.data ?? []
+  const projAccounts: Account[] = accountsResult.data ?? []
 
   const avg = (arr: number[]) => arr.length ? arr.reduce((s, v) => s + v, 0) / arr.length : 0
 
@@ -290,8 +299,29 @@ export async function getPLProjection(months = 3): Promise<{ projections: PLData
       }
     })
 
+    // Loan installments for this projected month
+    const loanAccounts = projAccounts.filter(a => a.type === 'Loan')
+    const projLoanInstallments = loanAccounts.map(acc => {
+      const accInstallments = installments.filter(inst => {
+        if (inst.account_id !== acc.id) return false
+        const startMonth = inst.start_month.slice(0, 7)
+        const endYear = parseInt(inst.start_month.slice(0, 4))
+        const endMonthNum = parseInt(inst.start_month.slice(5, 7)) + inst.tenure_months - 1
+        const endDate = new Date(endYear, endMonthNum - 1, 1)
+        const endMonth = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}`
+        return projMonthStr >= startMonth && projMonthStr <= endMonth
+      })
+      const installmentItems = accInstallments.map(inst => ({ name: inst.name, amount: inst.monthly_amount }))
+      return {
+        account_name: acc.name,
+        amount: installmentItems.reduce((s, i) => s + i.amount, 0),
+        installment_items: installmentItems,
+      }
+    }).filter(row => row.amount > 0)
+
     const totalIncome = Math.round(avgIncome)
     const totalRepayments = projRepayments.reduce((s, r) => s + r.amount, 0)
+    const totalLoanInstallments = projLoanInstallments.reduce((s, r) => s + r.amount, 0)
     const totalExpenses = Math.round(avgExpenses)
     const totalSavings = Math.round(avgSavings)
 
@@ -299,15 +329,15 @@ export async function getPLProjection(months = 3): Promise<{ projections: PLData
       month: projMonthStr,
       income: [{ category: 'Projected', amount: totalIncome }],
       repayments: projRepayments,
-      loanInstallments: [],
+      loanInstallments: projLoanInstallments,
       expenses: [{ category: 'Projected', amount: totalExpenses }],
       savings: [{ destination_account: 'Projected', amount: totalSavings }],
       totals: {
         income: totalIncome,
-        repayments: totalRepayments,
+        repayments: totalRepayments + totalLoanInstallments,
         expenses: totalExpenses,
         savings: totalSavings,
-        disposable_income: totalIncome - totalRepayments - totalExpenses - totalSavings,
+        disposable_income: totalIncome - totalRepayments - totalLoanInstallments - totalExpenses - totalSavings,
       },
       isProjection: true,
     })
