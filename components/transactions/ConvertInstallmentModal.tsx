@@ -46,8 +46,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 export function ConvertInstallmentModal({ open, tx, onClose, onSuccess }: Props) {
   const [name, setName] = useState('')
-  const [monthlyStr, setMonthlyStr] = useState('')
-  const [tenureStr] = useState('')
+  const [tenureStr, setTenureStr] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
 
@@ -66,12 +65,9 @@ export function ConvertInstallmentModal({ open, tx, onClose, onSuccess }: Props)
   const [startMonth, setStartMonth] = useState({ year: startYear, month: startMonthNum })
 
   const total = tx?.amount ?? 0
-  const monthly = parseInt(monthlyStr.replace(/\D/g, '')) || 0
-  const tenureInput = parseInt(tenureStr) || 0
-
-  // Auto-calculate tenure from monthly if not entered, or vice versa
-  const computedTenure = tenureInput > 0 ? tenureInput : (monthly > 0 && total > 0 ? Math.ceil(total / monthly) : 0)
-  const payoffMonth = computedTenure > 0 ? addMonths(monthStr(startMonth.year, startMonth.month), computedTenure - 1) : null
+  const tenure = parseInt(tenureStr) || 0
+  const computedMonthly = tenure > 0 && total > 0 ? Math.ceil(total / tenure) : 0
+  const payoffMonth = tenure > 0 ? addMonths(monthStr(startMonth.year, startMonth.month), tenure - 1) : null
 
   // Reset form when tx changes
   if (!open) return null
@@ -80,17 +76,16 @@ export function ConvertInstallmentModal({ open, tx, onClose, onSuccess }: Props)
     setError(null)
     if (!tx) return
     if (!name.trim()) return setError('Name is required')
-    if (monthly <= 0) return setError('Monthly amount must be > 0')
-    if (computedTenure <= 0) return setError('Cannot determine tenure — enter monthly amount or tenure')
+    if (tenure <= 0) return setError('Number of installment months is required')
 
     startTransition(async () => {
       const res = await convertTransactionToInstallment(tx.id, {
         name: name.trim(),
         account_id: tx.account_id,
         total_amount: total,
-        monthly_amount: monthly,
+        monthly_amount: computedMonthly,
         start_month: monthStr(startMonth.year, startMonth.month),
-        tenure_months: computedTenure,
+        tenure_months: tenure,
         source_transaction_id: tx.id,
       })
       if (res.error) {
@@ -158,25 +153,25 @@ export function ConvertInstallmentModal({ open, tx, onClose, onSuccess }: Props)
             </div>
           </Field>
 
-          <Field label="Monthly installment amount (Rp)">
+          <Field label="Number of installment months">
             <input
-              value={monthlyStr}
-              onChange={e => setMonthlyStr(e.target.value)}
-              placeholder="0"
+              value={tenureStr}
+              onChange={e => setTenureStr(e.target.value.replace(/\D/g, ''))}
+              placeholder="e.g. 12"
               style={inputStyle}
             />
           </Field>
 
-          <Field label="Tenure (months — or auto-calculated)">
+          <Field label="Monthly installment amount (auto-calculated)">
             <div style={{ padding: '7px 12px', background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', fontSize: 13, color: 'var(--text-primary)' }}>
-              {computedTenure > 0 ? `${computedTenure} months` : '—'}
+              {computedMonthly > 0 ? formatIDR(computedMonthly) : '—'}
             </div>
           </Field>
 
           {/* Preview */}
-          {computedTenure > 0 && payoffMonth && (
+          {tenure > 0 && payoffMonth && (
             <div style={{ padding: '10px 12px', background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', borderRadius: 'var(--radius-md)', fontSize: 12, color: 'var(--accent)' }}>
-              <strong>{computedTenure} monthly payments</strong> of {formatIDR(monthly)} · Paid off: {monthLabel(payoffMonth)}
+              <strong>{tenure} monthly payments</strong> of {formatIDR(computedMonthly)} · Paid off: {monthLabel(payoffMonth)}
             </div>
           )}
 
