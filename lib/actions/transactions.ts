@@ -344,7 +344,7 @@ export async function rerunClassificationRules(): Promise<{ updatedCount: number
     const matchedRule = (rules as ClassificationRule[]).find(
       (rule) =>
         tx.merchant != null &&
-        tx.merchant.toLowerCase().includes(rule.keyword.toLowerCase())
+        rule.keyword.split(',').map(k => k.trim().toLowerCase()).some(k => k && tx.merchant.toLowerCase().includes(k))
     )
 
     if (matchedRule) {

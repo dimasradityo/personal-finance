@@ -113,7 +113,7 @@ export async function POST(req: NextRequest) {
 
     if (rules) {
       const matchedRule = (rules as ClassificationRule[]).find((rule) =>
-        merchant.toLowerCase().includes(rule.keyword.toLowerCase())
+        rule.keyword.split(',').map(k => k.trim().toLowerCase()).some(k => k && merchant.toLowerCase().includes(k))
       )
       if (matchedRule) {
         matchedType = matchedRule.transaction_type as TransactionType
