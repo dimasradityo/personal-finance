@@ -18,6 +18,7 @@ const TYPE_COLORS: Record<string, string> = {
   'Credit Card': 'var(--amber)',
   'E-Wallet': 'var(--green)',
   'Crypto Wallet': 'var(--purple)',
+  'Loan': 'var(--red)',
 }
 
 const TYPE_LABELS: Record<string, { bg: string; border: string; color: string }> = {
@@ -25,6 +26,7 @@ const TYPE_LABELS: Record<string, { bg: string; border: string; color: string }>
   'Credit Card': { bg: 'var(--amber-dim)', border: 'var(--amber-border)', color: 'var(--amber)' },
   'E-Wallet': { bg: 'var(--green-dim)', border: 'var(--green-border)', color: 'var(--green)' },
   'Crypto Wallet': { bg: 'var(--purple-dim)', border: 'var(--purple-border)', color: 'var(--purple)' },
+  'Loan': { bg: 'var(--red-dim)', border: 'var(--red-border)', color: 'var(--red)' },
 }
 
 export function AccountsPageClient({ accounts, usdtRate }: AccountsPageClientProps) {

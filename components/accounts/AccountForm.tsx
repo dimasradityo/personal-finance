@@ -10,7 +10,7 @@ interface AccountFormProps {
   onClose: () => void
 }
 
-const ACCOUNT_TYPES: AccountType[] = ['Debit', 'Credit Card', 'E-Wallet', 'Crypto Wallet']
+const ACCOUNT_TYPES: AccountType[] = ['Debit', 'Credit Card', 'E-Wallet', 'Crypto Wallet', 'Loan']
 
 export function AccountForm({ account, onSuccess, onClose }: AccountFormProps) {
   const isEdit = !!account
