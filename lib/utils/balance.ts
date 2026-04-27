@@ -5,7 +5,7 @@ export interface BalanceDelta {
   delta: number
 }
 
-interface TransactionFields {
+export interface TransactionFields {
   account_id: string
   account_type: AccountType
   destination_account_id: string | null
