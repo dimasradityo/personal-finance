@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { ClassificationRule, TransactionType } from '@/types'
+import { ClassificationRule, TransactionType, AccountType } from '@/types'
+import { getBalanceDelta } from '@/lib/utils/balance'
 
 function getSupabase() {
   return createClient(
@@ -73,7 +74,7 @@ export async function POST(req: NextRequest) {
     // 2. Look up account by name
     const { data: account, error: accountError } = await supabase
       .from('accounts')
-      .select('id')
+      .select('id, type')
       .eq('name', account_name)
       .eq('is_active', true)
       .single()
@@ -146,6 +147,20 @@ await insertIngestionError(txError.message, rawEmail)
     if (!tx) {
       await insertIngestionError('Insert returned no row', rawEmail)
       return NextResponse.json({ error: 'Insert returned no row' }, { status: 422 })
+    }
+
+    // Apply balance delta
+    const deltas = getBalanceDelta({
+      account_id: account.id,
+      account_type: account.type as AccountType,
+      destination_account_id: null,
+      destination_account_type: null,
+      amount,
+      type: matchedType,
+    })
+    for (const { accountId, delta } of deltas) {
+      if (delta === 0) continue
+      await supabase.rpc('increment_balance', { p_account_id: accountId, p_delta: delta })
     }
 
     return NextResponse.json({ id: tx.id }, { status: 201 })
