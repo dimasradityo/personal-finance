@@ -267,7 +267,6 @@ function AddInstallmentModal({
   const [name, setName] = useState('')
   const [accountId, setAccountId] = useState(ccAccounts[0]?.id ?? '')
   const [totalAmount, setTotalAmount] = useState('')
-  const [monthlyAmount, setMonthlyAmount] = useState('')
   const [tenure, setTenure] = useState('')
   const [startMonth, setStartMonth] = useState({ year: now.getFullYear(), month: now.getMonth() + 1 })
   const [notes, setNotes] = useState('')
@@ -275,13 +274,11 @@ function AddInstallmentModal({
   const [isPending, startTransition] = useTransition()
 
   const total = parseInt(totalAmount.replace(/\D/g, '')) || 0
-  const monthly = parseInt(monthlyAmount.replace(/\D/g, '')) || 0
   const tenureNum = parseInt(tenure) || 0
+  const computedMonthly = tenureNum > 0 && total > 0 ? Math.ceil(total / tenureNum) : 0
 
-  // Live preview
-  const computedTenure = monthly > 0 && total > 0 ? Math.ceil(total / monthly) : tenureNum
-  const payoffDate = computedTenure > 0
-    ? addMonths(getMonthStr(startMonth.year, startMonth.month), computedTenure - 1)
+  const payoffDate = tenureNum > 0
+    ? addMonths(getMonthStr(startMonth.year, startMonth.month), tenureNum - 1)
     : null
 
   if (!open) return null
@@ -291,18 +288,16 @@ function AddInstallmentModal({
     if (!name.trim()) return setError('Name is required')
     if (!accountId) return setError('Account is required')
     if (total <= 0) return setError('Total amount must be > 0')
-    if (monthly <= 0) return setError('Monthly amount must be > 0')
-    if (monthly > total) return setError('Monthly amount must be ≤ total amount')
-    if (computedTenure <= 0) return setError('Tenure must be > 0')
+    if (tenureNum <= 0) return setError('Number of installment months is required')
 
     startTransition(async () => {
       const res = await createInstallment({
         name: name.trim(),
         account_id: accountId,
         total_amount: total,
-        monthly_amount: monthly,
+        monthly_amount: computedMonthly,
         start_month: getMonthStr(startMonth.year, startMonth.month),
-        tenure_months: computedTenure,
+        tenure_months: tenureNum,
         notes: notes.trim() || null,
       })
       if (res.error) {
@@ -310,7 +305,7 @@ function AddInstallmentModal({
       } else {
         onSuccess()
         onClose()
-        setName(''); setTotalAmount(''); setMonthlyAmount(''); setTenure(''); setNotes('')
+        setName(''); setTotalAmount(''); setTenure(''); setNotes('')
       }
     })
   }
@@ -341,8 +336,10 @@ function AddInstallmentModal({
             <Field label="Total Amount (Rp)">
               <input value={totalAmount} onChange={e => setTotalAmount(e.target.value)} placeholder="0" style={inputStyle} />
             </Field>
-            <Field label="Monthly Amount (Rp)">
-              <input value={monthlyAmount} onChange={e => setMonthlyAmount(e.target.value)} placeholder="0" style={inputStyle} />
+            <Field label="Monthly Amount (auto-calculated)">
+              <div style={{ padding: '7px 12px', background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', fontSize: 13, color: 'var(--text-primary)' }}>
+                {computedMonthly > 0 ? formatIDR(computedMonthly) : '—'}
+              </div>
             </Field>
           </div>
 
@@ -362,13 +359,13 @@ function AddInstallmentModal({
             </div>
           </Field>
 
-          <Field label="Tenure (months) — or auto-calculated from total ÷ monthly">
-            <input value={tenure} onChange={e => setTenure(e.target.value)} placeholder="e.g. 12" style={inputStyle} type="number" min={1} />
+          <Field label="Number of installment months">
+            <input value={tenure} onChange={e => setTenure(e.target.value.replace(/\D/g, ''))} placeholder="e.g. 12" style={inputStyle} />
           </Field>
 
-          {computedTenure > 0 && payoffDate && (
+          {tenureNum > 0 && payoffDate && (
             <div style={{ padding: '10px 12px', background: 'var(--accent-dim)', border: '1px solid var(--accent-border)', borderRadius: 'var(--radius-md)', fontSize: 12, color: 'var(--accent)' }}>
-              <strong>{computedTenure} monthly payments</strong> of {formatIDR(monthly)} · Paid off: {monthLabel(payoffDate)}
+              <strong>{tenureNum} monthly payments</strong> of {formatIDR(computedMonthly)} · Paid off: {monthLabel(payoffDate)}
             </div>
           )}
 
