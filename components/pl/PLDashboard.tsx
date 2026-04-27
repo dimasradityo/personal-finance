@@ -232,8 +232,24 @@ function ActualsTable({ data, onDrill }: { data: PLData; onDrill: (t: DrillTarge
           )}
         />
       ))}
-      {data.repayments.length === 0 && (
+      {data.repayments.length === 0 && data.loanInstallments.length === 0 && (
         <div style={{ padding: '12px 20px', fontSize: 13, color: 'var(--text-muted)' }}>No repayments this month</div>
+      )}
+      {data.loanInstallments.length > 0 && (
+        <>
+          <div style={{ padding: '6px 16px', fontSize: 11, fontWeight: 600, letterSpacing: '0.06em', color: 'var(--text-muted)', textTransform: 'uppercase', borderTop: '1px solid var(--border-subtle)' }}>
+            Loan Installments
+          </div>
+          {data.loanInstallments.map(row => (
+            <div key={row.account_name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 16px', borderBottom: '1px solid var(--border-subtle)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ width: 3, height: 16, borderRadius: 2, background: 'var(--red)', display: 'inline-block' }} />
+                <span style={{ fontSize: 13 }}>{row.account_name}</span>
+              </div>
+              <span style={{ fontSize: 13, fontWeight: 500 }}>{formatIDR(row.amount)}</span>
+            </div>
+          ))}
+        </>
       )}
       <PLTotalRow label="Total Repayments" amount={data.totals.repayments} color="var(--red)" />
 

@@ -17,6 +17,7 @@ export type PLData = {
   month: string
   income: { category: string; amount: number }[]
   repayments: RepaymentRow[]
+  loanInstallments: { account_name: string; amount: number; installment_items: { name: string; amount: number }[] }[]
   expenses: { category: string; amount: number }[]
   savings: { destination_account: string; amount: number }[]
   totals: {
@@ -176,9 +177,30 @@ export async function getPLData(year: number, month: number): Promise<PLData> {
     })
   }
 
+  // ── Loan Installments ─────────────────────────────────────────────
+  const loanAccounts = accounts.filter(a => a.type === 'Loan')
+  const loanInstallments = loanAccounts.map(acc => {
+    const accInstallments = installments.filter(inst => {
+      if (inst.account_id !== acc.id) return false
+      const startMonth = inst.start_month.slice(0, 7)
+      const endYear = parseInt(inst.start_month.slice(0, 4))
+      const endMonthNum = parseInt(inst.start_month.slice(5, 7)) + inst.tenure_months - 1
+      const endDate = new Date(endYear, endMonthNum - 1, 1)
+      const endMonth = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}`
+      return monthStr >= startMonth && monthStr <= endMonth
+    })
+    const installmentItems = accInstallments.map(inst => ({ name: inst.name, amount: inst.monthly_amount }))
+    return {
+      account_name: acc.name,
+      amount: installmentItems.reduce((s, i) => s + i.amount, 0),
+      installment_items: installmentItems,
+    }
+  }).filter(row => row.amount > 0)
+
   // ── Totals ────────────────────────────────────────────────────
   const totalIncome = income.reduce((s, r) => s + r.amount, 0)
   const totalRepayments = repayments.reduce((s, r) => s + r.amount, 0)
+  const totalLoanInstallments = loanInstallments.reduce((s, r) => s + r.amount, 0)
   const totalExpenses = expenses.reduce((s, r) => s + r.amount, 0)
   const totalSavings = savings.reduce((s, r) => s + r.amount, 0)
 
@@ -186,14 +208,15 @@ export async function getPLData(year: number, month: number): Promise<PLData> {
     month: monthStr,
     income,
     repayments,
+    loanInstallments,
     expenses,
     savings,
     totals: {
       income: totalIncome,
-      repayments: totalRepayments,
+      repayments: totalRepayments + totalLoanInstallments,
       expenses: totalExpenses,
       savings: totalSavings,
-      disposable_income: totalIncome - totalRepayments - totalExpenses - totalSavings,
+      disposable_income: totalIncome - totalRepayments - totalLoanInstallments - totalExpenses - totalSavings,
     },
   }
 }
@@ -276,6 +299,7 @@ export async function getPLProjection(months = 3): Promise<{ projections: PLData
       month: projMonthStr,
       income: [{ category: 'Projected', amount: totalIncome }],
       repayments: projRepayments,
+      loanInstallments: [],
       expenses: [{ category: 'Projected', amount: totalExpenses }],
       savings: [{ destination_account: 'Projected', amount: totalSavings }],
       totals: {
