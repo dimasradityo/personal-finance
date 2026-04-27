@@ -32,6 +32,9 @@ export function getBalanceDelta(tx: TransactionFields): BalanceDelta[] {
       break
     case 'Repayment':
       if (!srcExcluded) deltas.push({ accountId: tx.account_id, delta: -tx.amount })
+      if (tx.destination_account_id && !dstExcluded) {
+        deltas.push({ accountId: tx.destination_account_id, delta: -tx.amount })
+      }
       break
     case 'Savings/Investment':
     case 'Internal Transfer':

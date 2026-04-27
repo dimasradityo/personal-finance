@@ -24,7 +24,7 @@ const TRANSACTION_TYPES: TransactionType[] = [
 ]
 
 const TYPES_REQUIRING_CATEGORY: TransactionType[] = ['Income', 'Expense', 'CC Spend']
-const TYPES_WITH_DESTINATION: TransactionType[] = ['Internal Transfer', 'Savings/Investment']
+const TYPES_WITH_DESTINATION: TransactionType[] = ['Internal Transfer', 'Savings/Investment', 'Repayment']
 
 export function ManualEntryForm({ accounts, categories, prefillFromError, onSuccess, onClose }: ManualEntryFormProps) {
   const today = new Date().toISOString().slice(0, 10)
