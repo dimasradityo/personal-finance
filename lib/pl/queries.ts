@@ -151,33 +151,8 @@ export async function getPLData(year: number, month: number): Promise<PLData> {
     })
   }
 
-  // Loan accounts: sum of Repayment transactions in calendar month
-  // A "Loan" account is identified by having transactions of type 'Repayment'
-  // We look at all accounts that have repayment transactions
-  const repaymentTxByAccount = new Map<string, number>()
-  for (const tx of allTx) {
-    if (tx.type !== 'Repayment') continue
-    if (tx.date < calStart || tx.date > calEnd) continue
-    repaymentTxByAccount.set(tx.account_id, (repaymentTxByAccount.get(tx.account_id) ?? 0) + tx.amount)
-  }
-
-  for (const [accountId, amount] of Array.from(repaymentTxByAccount.entries())) {
-    const acc = accounts.find(a => a.id === accountId)
-    if (!acc) continue
-    // Don't double-count CC accounts (they're handled above via CC Spend)
-    if (acc.type === 'Credit Card') continue
-    // Don't double-count Loan accounts — their obligations are captured via loanInstallments
-    if (acc.type === 'Loan') continue
-
-    repayments.push({
-      account_id: acc.id,
-      account_name: acc.name,
-      account_type: 'Loan',
-      amount,
-      has_statement_date_warning: false,
-      installment_items: [],
-    })
-  }
+  // Repayment transactions are excluded from P&L — they only affect balance calculations.
+  // CC repayments are already captured via CC Spend; loan obligations via loanInstallments.
 
   // ── Loan Installments ─────────────────────────────────────────────
   const loanAccounts = accounts.filter(a => a.type === 'Loan')
