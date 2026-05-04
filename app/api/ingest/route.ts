@@ -109,7 +109,12 @@ export async function POST(req: NextRequest) {
       .select('*')
       .eq('is_enabled', true)
 
-    let matchedType: TransactionType = 'Expense'
+    const accountTypeDefault: Record<string, TransactionType> = {
+      'Credit Card': 'CC Spend',
+    }
+    const defaultType: TransactionType = accountTypeDefault[account.type] ?? 'Expense'
+
+    let matchedType: TransactionType = defaultType
     let matchedCategoryId: string | null = null
 
     if (rules) {
