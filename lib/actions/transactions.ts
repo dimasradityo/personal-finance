@@ -138,6 +138,7 @@ export async function createTransaction(data: CreateTransactionData): Promise<{ 
       type: data.type,
       category_id: data.category_id ?? null,
       destination_account_id: data.account_id,
+      is_mirror: true,
       source: data.source,
       raw_email: data.raw_email ?? null,
       notes: data.notes ?? null,

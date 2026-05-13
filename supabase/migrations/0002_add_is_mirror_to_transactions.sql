@@ -1,0 +1,1 @@
+ALTER TABLE transactions ADD COLUMN is_mirror BOOLEAN NOT NULL DEFAULT false;

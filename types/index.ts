@@ -45,6 +45,7 @@ export interface Transaction {
   type: TransactionType
   category_id: string | null
   installment_converted: boolean
+  is_mirror: boolean
   destination_account_id: string | null
   source: TransactionSource
   raw_email: string | null

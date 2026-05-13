@@ -428,6 +428,7 @@ export function TransactionsFeed({
                 {visibleTransactions.map((tx) => {
                   const cat = tx.category
                   const isIncome = tx.type === 'Income'
+                  const isCredit = tx.is_mirror
                   const needsCat = tx.type != null && TYPES_REQUIRING_CATEGORY.includes(tx.type)
                   const missingCat = needsCat && !tx.category_id
 
@@ -573,9 +574,9 @@ export function TransactionsFeed({
                       <td className="px-3 py-3 text-right">
                         <span
                           className="font-mono text-sm font-medium"
-                          style={{ color: isIncome ? 'var(--green)' : 'var(--text-primary)' }}
+                          style={{ color: isIncome || isCredit ? 'var(--green)' : 'var(--text-primary)' }}
                         >
-                          {isIncome ? '+' : '−'}{formatIDR(tx.amount)}
+                          {isIncome || isCredit ? '+' : '−'}{formatIDR(tx.amount)}
                         </span>
                       </td>
 
